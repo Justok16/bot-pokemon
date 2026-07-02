@@ -5,6 +5,9 @@ on:
     - cron: '*/30 * * * *'   # toutes les 30 minutes
   workflow_dispatch:          # bouton pour lancer à la main
 
+permissions:
+  contents: write             # ← autorise le bot à sauvegarder la mémoire
+
 jobs:
   surveiller:
     runs-on: ubuntu-latest
@@ -28,3 +31,11 @@ jobs:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python bot.py
+
+      - name: Sauvegarder la mémoire des alertes
+        run: |
+          git config user.name "bot-pokemon"
+          git config user.email "bot@github.com"
+          git add deja_alertees.json
+          git commit -m "Mise à jour mémoire alertes" || echo "Rien à sauvegarder"
+          git push || echo "Rien à pousser"
