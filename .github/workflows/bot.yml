@@ -1,0 +1,30 @@
+name: Bot Pokémon
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'   # toutes les 30 minutes
+  workflow_dispatch:          # bouton pour lancer à la main
+
+jobs:
+  surveiller:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: Installer Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Installer les librairies
+        run: pip install requests python-dotenv
+
+      - name: Lancer le bot
+        env:
+          EBAY_APP_ID: ${{ secrets.EBAY_APP_ID }}
+          EBAY_CERT_ID: ${{ secrets.EBAY_CERT_ID }}
+          EBAY_DEV_ID: ${{ secrets.EBAY_DEV_ID }}
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python bot.py
