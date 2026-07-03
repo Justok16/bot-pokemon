@@ -26,7 +26,7 @@ CARTES = [
 SEUIL_ACHAT = 0.90       # acheter si ≤ -10% de la cote
 PRIX_MINIMUM = 3.0       # on ignore les cartes < 3 €
 ECART_MAX_COTE = 0.5     # on ignore les prix < 50% ou > 150% de la cote
-MIN_ANNONCES = 3         # au moins 3 annonces pour une cote fiableFRAIS_PORT_MAX = 6.0     # on ignore si les frais de port dépassent 6 €
+MIN_ANNONCES = 3         # au moins 3 annonces pour une cote fiable
 FRAIS_PORT_MAX = 6.0     # on ignore si les frais de port dépassent 6 €
 
 
