@@ -147,17 +147,19 @@ def analyser_langue(annonces, langue, nom, memoire):
     seuil = cote * SEUIL_ACHAT
     print(f"   📊 [{langue}] Cote : {cote:.2f} € | 🟢 Acheter si ≤ {seuil:.2f} €")
 
-    for prix, a in annonces:
+       for prix, a in annonces:
         # Anti-aberrant
         if prix < cote * (1 - ECART_MAX_COTE) or prix > cote * (1 + ECART_MAX_COTE):
             continue
+
         # Filtre frais de port
-            port = get_frais_port(a)
-            if port is not None and port > FRAIS_PORT_MAX:
-                continue  # port trop cher → on ignore
-            a["_port"] = port  # on mémorise pour l'afficher plus tard
+        port = get_frais_port(a)
+        if port is not None and port > FRAIS_PORT_MAX:
+            continue
+        a["_port"] = port
 
         if prix <= seuil:
+
             item_id = a.get("itemId", "")
             if item_id in memoire:
                 continue
