@@ -14,7 +14,6 @@ TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
 # 🃏 Cartes à surveiller — recherche LARGE, langue détectée automatiquement
-# On surveille chaque carte en JP ET en FR à partir d'une seule recherche
 CARTES = [
     {"recherche": "Dracaufeu ex 199/165 151", "nom": "Dracaufeu ex SIR 199/165"},
     {"recherche": "Pikachu AR 173/165 151",   "nom": "Pikachu AR 173/165"},
@@ -29,7 +28,6 @@ ECART_MAX_COTE = 0.5     # on ignore les prix < 50% ou > 150% de la cote
 MIN_ANNONCES = 3         # au moins 3 annonces pour une cote fiable
 FRAIS_PORT_MAX = 6.0     # on ignore si les frais de port dépassent 6 €
 
-
 FICHIER_MEMOIRE = "deja_alertees.json"
 
 # 🚫 Mots interdits (lots, coffrets, accessoires ET gradées)
@@ -42,7 +40,6 @@ MOTS_INTERDITS = [
 # 🌍 Détection de langue (mots-clés dans le titre)
 INDICES_JP = ["japonais", "japonaise", "japanese", "jpn", "jp", "sv2a", "japan"]
 INDICES_FR = ["français", "francaise", "française", "francais", "ev3.5", "ev 3.5", "neuve", "neuf"]
-
 
 
 def detecter_langue(titre):
@@ -93,7 +90,8 @@ def obtenir_token():
     )
     r.raise_for_status()
     return r.json()["access_token"]
-    
+
+
 def get_frais_port(annonce):
     """Renvoie les frais de port en €, ou None si l'info est absente."""
     options = annonce.get("shippingOptions", [])
@@ -104,7 +102,6 @@ def get_frais_port(annonce):
         return float(cout.get("value"))
     except (ValueError, TypeError):
         return None  # port inconnu
- 
 
 
 def rechercher_ebay(token, recherche):
@@ -122,7 +119,6 @@ def rechercher_ebay(token, recherche):
     return response.json().get("itemSummaries", [])
 
 
-
 def envoyer_alerte(message):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     data = {
@@ -137,7 +133,6 @@ def envoyer_alerte(message):
 def analyser_langue(annonces, langue, nom, memoire):
     """Calcule la cote pour une langue donnée et alerte les bonnes affaires."""
     nb = 0
-    # On garde les prix valides pour cette langue
     prix_valides = [p for p, a in annonces]
     if len(prix_valides) < MIN_ANNONCES:
         print(f"   ⏭️ [{langue}] Pas assez d'annonces ({len(prix_valides)}) → ignoré")
@@ -147,7 +142,7 @@ def analyser_langue(annonces, langue, nom, memoire):
     seuil = cote * SEUIL_ACHAT
     print(f"   📊 [{langue}] Cote : {cote:.2f} € | 🟢 Acheter si ≤ {seuil:.2f} €")
 
-       for prix, a in annonces:
+    for prix, a in annonces:
         # Anti-aberrant
         if prix < cote * (1 - ECART_MAX_COTE) or prix > cote * (1 + ECART_MAX_COTE):
             continue
@@ -159,7 +154,6 @@ def analyser_langue(annonces, langue, nom, memoire):
         a["_port"] = port
 
         if prix <= seuil:
-
             item_id = a.get("itemId", "")
             if item_id in memoire:
                 continue
@@ -167,6 +161,7 @@ def analyser_langue(annonces, langue, nom, memoire):
             lien = a.get("itemWebUrl", "https://www.ebay.fr")
             titre = a.get("title", "")
             drapeau = "🇯🇵" if langue == "JP" else "🇫🇷"
+            port_txt = ("%.2f €" % a["_port"]) if a.get("_port") is not None else "⚠️ à vérifier"
             message = (
                 "🎯 <b>BONNE AFFAIRE DÉTECTÉE !</b>\n\n"
                 f"🃏 <b>{nom}</b> {drapeau}\n"
@@ -174,9 +169,8 @@ def analyser_langue(annonces, langue, nom, memoire):
                 f"📊 Cote médiane : <b>{cote:.2f} €</b>\n"
                 f"💰 Prix : <b>{prix:.2f} €</b>\n"
                 f"📉 <b>-{remise}%</b> sous la cote ✅\n"
-                               f"📦 Frais de port : <b>{('%.2f €' % a['_port']) if a.get('_port') is not None else '⚠️ à vérifier'}</b>\n"
+                f"📦 Frais de port : <b>{port_txt}</b>\n"
                 f"🏪 Source : eBay\n\n"
-
                 f"🔗 <a href='{lien}'>Voir l'annonce</a>"
             )
             envoyer_alerte(message)
@@ -202,7 +196,6 @@ def main():
             print(f"   ⚠️ Erreur eBay : {e}")
             continue
 
-        # On trie les annonces par langue détectée
         annonces_jp = []
         annonces_fr = []
 
@@ -210,7 +203,6 @@ def main():
             titre = a.get("title", "")
             if titre_interdit(titre):
                 continue
-            # Prix
             prix_info = a.get("price", {})
             try:
                 prix = float(prix_info.get("value", 0))
@@ -224,9 +216,7 @@ def main():
                 annonces_jp.append((prix, a))
             elif langue == "FR":
                 annonces_fr.append((prix, a))
-            # None → ignorée (prudence)
 
-        # Analyse séparée JP et FR
         nb_alertes += analyser_langue(annonces_jp, "JP", carte["nom"], memoire)
         nb_alertes += analyser_langue(annonces_fr, "FR", carte["nom"], memoire)
 
