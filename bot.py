@@ -26,7 +26,9 @@ CARTES = [
 SEUIL_ACHAT = 0.90       # acheter si ≤ -10% de la cote
 PRIX_MINIMUM = 3.0       # on ignore les cartes < 3 €
 ECART_MAX_COTE = 0.5     # on ignore les prix < 50% ou > 150% de la cote
-MIN_ANNONCES = 3         # au moins 3 annonces pour une cote fiable
+MIN_ANNONCES = 3         # au moins 3 annonces pour une cote fiableFRAIS_PORT_MAX = 6.0     # on ignore si les frais de port dépassent 6 €
+FRAIS_PORT_MAX = 6.0     # on ignore si les frais de port dépassent 6 €
+
 
 FICHIER_MEMOIRE = "deja_alertees.json"
 
@@ -91,6 +93,18 @@ def obtenir_token():
     )
     r.raise_for_status()
     return r.json()["access_token"]
+    
+def get_frais_port(annonce):
+    """Renvoie les frais de port en €, ou None si l'info est absente."""
+    options = annonce.get("shippingOptions", [])
+    if not options:
+        return None  # port inconnu
+    cout = options[0].get("shippingCost", {})
+    try:
+        return float(cout.get("value"))
+    except (ValueError, TypeError):
+        return None  # port inconnu
+ 
 
 
 def rechercher_ebay(token, recherche):
@@ -137,6 +151,12 @@ def analyser_langue(annonces, langue, nom, memoire):
         # Anti-aberrant
         if prix < cote * (1 - ECART_MAX_COTE) or prix > cote * (1 + ECART_MAX_COTE):
             continue
+        # Filtre frais de port
+            port = get_frais_port(a)
+            if port is not None and port > FRAIS_PORT_MAX:
+                continue  # port trop cher → on ignore
+            a["_port"] = port  # on mémorise pour l'afficher plus tard
+
         if prix <= seuil:
             item_id = a.get("itemId", "")
             if item_id in memoire:
@@ -152,7 +172,9 @@ def analyser_langue(annonces, langue, nom, memoire):
                 f"📊 Cote médiane : <b>{cote:.2f} €</b>\n"
                 f"💰 Prix : <b>{prix:.2f} €</b>\n"
                 f"📉 <b>-{remise}%</b> sous la cote ✅\n"
+                               f"📦 Frais de port : <b>{('%.2f €' % a['_port']) if a.get('_port') is not None else '⚠️ à vérifier'}</b>\n"
                 f"🏪 Source : eBay\n\n"
+
                 f"🔗 <a href='{lien}'>Voir l'annonce</a>"
             )
             envoyer_alerte(message)
