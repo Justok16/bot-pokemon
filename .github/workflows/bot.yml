@@ -2,7 +2,8 @@ name: Bot Pokémon
 
 on:
   schedule:
-    - cron: '*/30 * * * *'   # toutes les 30 minutes
+        - cron: '*/15 * * * *'
+   # toutes les 30 minutes
   workflow_dispatch:          # bouton pour lancer à la main
 
 permissions:
